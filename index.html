@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodShare - Rescue Food, Reduce Waste</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+
+    <nav class="navbar">
+        <div class="logo">
+            🍱 <span>Food<span class="green">Share</span></span>
+        </div>
+
+        <div class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#how">How It Works</a>
+            <a href="#impact">Impact</a>
+        </div>
+
+        <button class="login-btn" onclick="openLogin()">
+            Login
+        </button>
+    </nav>
+
+
+    <!-- ================= HERO SECTION ================= -->
+
+    <section class="hero" id="home">
+
+        <div class="hero-content">
+
+            <div class="badge">
+                🌱 Smart Food Rescue Platform
+            </div>
+
+            <h1>
+                Rescue Food.<br>
+                <span>Reduce Waste.</span><br>
+                Feed Communities.
+            </h1>
+
+            <p>
+                FoodShare connects restaurants, messes and canteens
+                with NGOs to rescue surplus food before it goes to waste.
+            </p>
+
+            <div class="hero-buttons">
+                <button class="primary-btn" onclick="openLogin()">
+                    Start Sharing →
+                </button>
+
+                <button class="secondary-btn" onclick="scrollToSection('how')">
+                    How It Works
+                </button>
+            </div>
+
+        </div>
+
+
+        <div class="hero-card">
+
+            <div class="floating-card top-card">
+                🔥 <strong>25 kg rescued</strong>
+                <small>from college mess</small>
+            </div>
+
+            <div class="food-illustration">
+                🍱
+            </div>
+
+            <div class="floating-card bottom-card">
+                🤝 <strong>NGO Matched</strong>
+                <small>2.4 km away</small>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= STATS ================= -->
+
+    <section class="stats">
+
+        <div class="stat-card">
+            <div class="stat-icon">🍚</div>
+            <h2 id="foodStat">1,250+</h2>
+            <p>Food Rescued (kg)</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">🤝</div>
+            <h2>24+</h2>
+            <p>NGOs Connected</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">🍽️</div>
+            <h2>3,420+</h2>
+            <p>Meals Saved</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">🏢</div>
+            <h2>18+</h2>
+            <p>Active Donors</p>
+        </div>
+
+    </section>
+
+
+    <!-- ================= HOW IT WORKS ================= -->
+
+    <section class="how-section" id="how">
+
+        <div class="section-title">
+            <span>HOW IT WORKS</span>
+
+            <h2>
+                From Surplus Food<br>
+                to Someone's Plate
+            </h2>
+
+            <p>
+                A simple process that connects food donors with
+                verified NGOs.
+            </p>
+        </div>
+
+
+        <div class="steps">
+
+            <div class="step">
+                <div class="step-number">01</div>
+
+                <div class="step-icon">
+                    📝
+                </div>
+
+                <h3>Post Food</h3>
+
+                <p>
+                    Donors add details about their available
+                    surplus food.
+                </p>
+            </div>
+
+
+            <div class="line"></div>
+
+
+            <div class="step">
+                <div class="step-number">02</div>
+
+                <div class="step-icon">
+                    🔍
+                </div>
+
+                <h3>Find a Match</h3>
+
+                <p>
+                    NGOs discover suitable food donations
+                    near them.
+                </p>
+            </div>
+
+
+            <div class="line"></div>
+
+
+            <div class="step">
+                <div class="step-number">03</div>
+
+                <div class="step-icon">
+                    🤝
+                </div>
+
+                <h3>Confirm</h3>
+
+                <p>
+                    The donor confirms the NGO request
+                    for collection.
+                </p>
+            </div>
+
+
+            <div class="line"></div>
+
+
+            <div class="step">
+                <div class="step-number">04</div>
+
+                <div class="step-icon">
+                    🚚
+                </div>
+
+                <h3>Collect & Rescue</h3>
+
+                <p>
+                    NGO collects the food and the donation
+                    is marked completed.
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= IMPACT ================= -->
+
+    <section class="impact-section" id="impact">
+
+        <div class="impact-text">
+
+            <span>OUR IMPACT</span>
+
+            <h2>
+                Every Meal Saved<br>
+                Makes a Difference.
+            </h2>
+
+            <p>
+                FoodShare helps reduce avoidable food waste by
+                creating an organized connection between food
+                donors and NGOs.
+            </p>
+
+            <button class="primary-btn" onclick="openLogin()">
+                Join FoodShare →
+            </button>
+
+        </div>
+
+
+        <div class="impact-box">
+
+            <div class="impact-row">
+                <span>Food Rescued</span>
+                <strong>1,250 kg</strong>
+            </div>
+
+            <div class="progress">
+                <div class="progress-fill" style="width: 78%;"></div>
+            </div>
+
+
+            <div class="impact-row">
+                <span>Successful Pickups</span>
+                <strong>86</strong>
+            </div>
+
+            <div class="progress">
+                <div class="progress-fill" style="width: 86%;"></div>
+            </div>
+
+
+            <div class="impact-row">
+                <span>Active NGOs</span>
+                <strong>24</strong>
+            </div>
+
+            <div class="progress">
+                <div class="progress-fill" style="width: 65%;"></div>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer>
+
+        <div class="footer-logo">
+            🍱 Food<span>Share</span>
+        </div>
+
+        <p>
+            Rescue food. Reduce waste. Feed communities.
+        </p>
+
+        <p class="copyright">
+            © 2026 FoodShare. Hackathon Prototype.
+        </p>
+
+    </footer>
+
+
+    <!-- ================= LOGIN MODAL ================= -->
+
+    <div class="modal-overlay" id="loginModal">
+
+        <div class="login-modal">
+
+            <button class="close-btn" onclick="closeLogin()">
+                ×
+            </button>
+
+            <div class="modal-icon">
+                🍱
+            </div>
+
+            <h2>Welcome to FoodShare</h2>
+
+            <p>
+                Choose your role to continue
+            </p>
+
+
+            <button class="role-btn" onclick="openDashboard('donor')">
+                <span>🏢</span>
+
+                <div>
+                    <strong>Food Donor</strong>
+                    <small>Mess, Canteen, Hotel or Restaurant</small>
+                </div>
+
+                <span>→</span>
+            </button>
+
+
+            <button class="role-btn" onclick="openDashboard('ngo')">
+                <span>🤝</span>
+
+                <div>
+                    <strong>NGO</strong>
+                    <small>Find and collect surplus food</small>
+                </div>
+
+                <span>→</span>
+            </button>
+
+
+            <button class="role-btn" onclick="openDashboard('admin')">
+                <span>🛡️</span>
+
+                <div>
+                    <strong>Administrator</strong>
+                    <small>Manage the FoodShare platform</small>
+                </div>
+
+                <span>→</span>
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= DASHBOARD ================= -->
+
+    <div class="dashboard-overlay" id="dashboard">
+
+        <div class="dashboard">
+
+            <button class="close-dashboard" onclick="closeDashboard()">
+                ×
+            </button>
+
+            <div id="dashboardContent"></div>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
