@@ -1,577 +1,291 @@
-/* ================= LOGIN ================= */
+const API = "/api";
+const DONOR_NAME = "College Mess";
+const NGO_NAME = "Helping Hands NGO";
+
+const loginModal = document.getElementById("loginModal");
+const dashboard = document.getElementById("dashboard");
+const dashboardContent = document.getElementById("dashboardContent");
+
+document.getElementById("loginButton").addEventListener("click", openLogin);
+document.getElementById("shareButton").addEventListener("click", openLogin);
+document.getElementById("joinButton").addEventListener("click", openLogin);
+document.getElementById("closeLogin").addEventListener("click", closeLogin);
+document.getElementById("closeDashboard").addEventListener("click", closeDashboard);
+
+document.querySelectorAll("[data-role]").forEach(button => {
+    button.addEventListener("click", () => openDashboard(button.dataset.role));
+});
+
+loginModal.addEventListener("click", event => {
+    if (event.target === loginModal) closeLogin();
+});
+
+dashboard.addEventListener("click", event => {
+    if (event.target === dashboard) closeDashboard();
+});
 
 function openLogin() {
-    document.getElementById("loginModal").style.display = "flex";
+    loginModal.classList.add("open");
+    loginModal.setAttribute("aria-hidden", "false");
 }
 
 function closeLogin() {
-    document.getElementById("loginModal").style.display = "none";
+    loginModal.classList.remove("open");
+    loginModal.setAttribute("aria-hidden", "true");
 }
-
-
-/* ================= DASHBOARD ================= */
-
-function openDashboard(role) {
-
-    closeLogin();
-
-    const dashboard = document.getElementById("dashboard");
-    const content = document.getElementById("dashboardContent");
-
-    dashboard.style.display = "flex";
-
-    if (role === "donor") {
-        showDonorDashboard(content);
-    }
-
-    if (role === "ngo") {
-        showNGODashboard(content);
-    }
-
-    if (role === "admin") {
-        showAdminDashboard(content);
-    }
-}
-
 
 function closeDashboard() {
-    document.getElementById("dashboard").style.display = "none";
+    dashboard.classList.remove("open");
+    dashboard.setAttribute("aria-hidden", "true");
 }
 
+async function openDashboard(role) {
+    closeLogin();
+    dashboard.classList.add("open");
+    dashboard.setAttribute("aria-hidden", "false");
+    dashboardContent.innerHTML = "<p>Loading FoodShare data…</p>";
 
-/* ================= DONOR DASHBOARD ================= */
-
-function showDonorDashboard(content) {
-
-    content.innerHTML = `
-
-        <div class="dashboard-header">
-
-            <h2>Donor Dashboard 🏢</h2>
-
-            <p>
-                Welcome, College Mess
-            </p>
-
-        </div>
-
-
-        <div class="dashboard-stats">
-
-            <div class="dashboard-stat">
-                <strong>3</strong>
-                <span>Available</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>1</strong>
-                <span>Requested</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>8</strong>
-                <span>Collected</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>2</strong>
-                <span>Expired</span>
-            </div>
-
-        </div>
-
-
-        <div class="dashboard-card">
-
-            <h3>➕ Add New Donation</h3>
-
-            <div class="food-card">
-
-                <input
-                    id="foodName"
-                    placeholder="Food name e.g. Rice + Dal"
-                    style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;"
-                >
-
-                <input
-                    id="quantity"
-                    placeholder="Quantity e.g. 25 kg"
-                    style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;"
-                >
-
-                <input
-                    id="location"
-                    placeholder="Pickup location"
-                    style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;"
-                >
-
-                <input
-                    id="deadline"
-                    placeholder="Pickup deadline e.g. 10:30 PM"
-                    style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px;"
-                >
-
-                <button
-                    class="action-btn"
-                    onclick="postDonation()"
-                >
-                    POST DONATION
-                </button>
-
-            </div>
-
-        </div>
-
-
-        <div class="dashboard-card">
-
-            <h3>📦 My Donations</h3>
-
-            <div id="donationList">
-
-                <div class="food-card">
-
-                    <div class="food-card-header">
-
-                        <h4>🍚 Rice + Dal</h4>
-
-                        <span class="status">
-                            AVAILABLE
-                        </span>
-
-                    </div>
-
-                    <div class="food-details">
-
-                        <span>⚖️ 20 kg</span>
-
-                        <span>📍 College Mess</span>
-
-                        <span>⏰ 10:30 PM</span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="food-card">
-
-                    <div class="food-card-header">
-
-                        <h4>🥗 Vegetable Curry</h4>
-
-                        <span class="status">
-                            REQUESTED
-                        </span>
-
-                    </div>
-
-                    <div class="food-details">
-
-                        <span>⚖️ 15 kg</span>
-
-                        <span>📍 College Mess</span>
-
-                    </div>
-
-                    <button
-                        class="action-btn"
-                        onclick="confirmDonation(this)"
-                    >
-                        ACCEPT NGO REQUEST
-                    </button>
-
-                </div>
-
-            </div>
-
-        </div>
-    `;
+    try {
+        if (role === "donor") {
+            await showDonorDashboard();
+        } else if (role === "ngo") {
+            await showNGODashboard();
+        } else {
+            await showAdminDashboard();
+        }
+    } catch (error) {
+        dashboardContent.innerHTML =
+            `<p class="error-message">${escapeHTML(error.message)}</p>`;
+    }
 }
 
+async function apiRequest(path, options = {}) {
+    const response = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        }
+    });
 
-/* ================= POST DONATION ================= */
+    const data = await response.json().catch(() => ({}));
 
-function postDonation() {
-
-    const foodName = document.getElementById("foodName").value;
-    const quantity = document.getElementById("quantity").value;
-    const location = document.getElementById("location").value;
-    const deadline = document.getElementById("deadline").value;
-
-    if (
-        foodName === "" ||
-        quantity === "" ||
-        location === "" ||
-        deadline === ""
-    ) {
-        alert("Please fill all donation details.");
-        return;
+    if (!response.ok) {
+        throw new Error(data.error || `Request failed (${response.status})`);
     }
 
-
-    const donationList =
-        document.getElementById("donationList");
-
-
-    const newDonation = document.createElement("div");
-
-    newDonation.className = "food-card";
-
-    newDonation.innerHTML = `
-
-        <div class="food-card-header">
-
-            <h4>🍱 ${foodName}</h4>
-
-            <span class="status">
-                AVAILABLE
-            </span>
-
-        </div>
-
-        <div class="food-details">
-
-            <span>⚖️ ${quantity}</span>
-
-            <span>📍 ${location}</span>
-
-            <span>⏰ ${deadline}</span>
-
-        </div>
-
-    `;
-
-
-    donationList.prepend(newDonation);
-
-
-    document.getElementById("foodName").value = "";
-    document.getElementById("quantity").value = "";
-    document.getElementById("location").value = "";
-    document.getElementById("deadline").value = "";
-
-
-    alert("Donation posted successfully! 🍱");
+    return data;
 }
 
-
-/* ================= CONFIRM DONATION ================= */
-
-function confirmDonation(button) {
-
-    const card = button.parentElement;
-
-    const status = card.querySelector(".status");
-
-    status.innerText = "CONFIRMED";
-
-    button.innerText = "NGO CONFIRMED ✓";
-
-    button.disabled = true;
-
-    alert("NGO request confirmed successfully!");
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
 }
 
-
-/* ================= NGO DASHBOARD ================= */
-
-function showNGODashboard(content) {
-
-    content.innerHTML = `
-
+function dashboardHeader(title, subtitle) {
+    return `
         <div class="dashboard-header">
-
-            <h2>NGO Dashboard 🤝</h2>
-
-            <p>
-                Find surplus food available near you
-            </p>
-
+            <h2>${title}</h2>
+            <p>${subtitle}</p>
         </div>
-
-
-        <div class="dashboard-stats">
-
-            <div class="dashboard-stat">
-                <strong>12</strong>
-                <span>Available Donations</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>4</strong>
-                <span>My Requests</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>18</strong>
-                <span>Collected</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>2.4 km</strong>
-                <span>Nearest Food</span>
-            </div>
-
-        </div>
-
-
-        <div class="dashboard-card">
-
-            <h3>🍱 Available Donations</h3>
-
-
-            ${createNGOFoodCard(
-                "Rice + Dal",
-                "25 kg",
-                "College Mess",
-                "10:30 PM"
-            )}
-
-
-            ${createNGOFoodCard(
-                "Vegetable Pulao",
-                "18 kg",
-                "City Canteen",
-                "9:45 PM"
-            )}
-
-
-            ${createNGOFoodCard(
-                "Chapati + Sabzi",
-                "30 kg",
-                "Hotel Green",
-                "11:00 PM"
-            )}
-
-        </div>
-
     `;
 }
 
-
-function createNGOFoodCard(
-    food,
-    quantity,
-    location,
-    deadline
-) {
+function donationCard(donation, action = "") {
+    const buttonText = {
+        request: "REQUEST FOOD",
+        confirm: "ACCEPT NGO REQUEST",
+        collect: "MARK COLLECTED"
+    };
 
     return `
-
-        <div class="food-card">
-
+        <article class="food-card">
             <div class="food-card-header">
-
-                <h4>🍚 ${food}</h4>
-
-                <span class="status">
-                    AVAILABLE
-                </span>
-
+                <h4>🍱 ${escapeHTML(donation.food_name)}</h4>
+                <span class="status">${escapeHTML(donation.status).toUpperCase()}</span>
             </div>
 
             <div class="food-details">
-
-                <span>⚖️ ${quantity}</span>
-
-                <span>📍 ${location}</span>
-
-                <span>⏰ ${deadline}</span>
-
+                <span>⚖️ ${escapeHTML(donation.quantity)} portions</span>
+                <span>📍 ${escapeHTML(donation.location)}</span>
+                <span>⏰ ${escapeHTML(donation.pickup_deadline)}</span>
             </div>
 
-            <button
-                class="action-btn"
-                onclick="requestFood(this)"
-            >
-                REQUEST FOOD
-            </button>
+            <div class="food-details">
+                <span>Donor: ${escapeHTML(donation.donor_name)}</span>
+                ${donation.requested_by
+                    ? `<span>NGO: ${escapeHTML(donation.requested_by)}</span>`
+                    : ""}
+            </div>
 
-        </div>
-
+            ${action
+                ? `<button class="action-btn" data-action="${action}" data-id="${donation.id}">
+                    ${buttonText[action]}
+                   </button>`
+                : ""}
+        </article>
     `;
 }
 
+function connectActionButtons() {
+    document.querySelectorAll("[data-action]").forEach(button => {
+        button.addEventListener("click", async () => {
+            button.disabled = true;
 
-/* ================= REQUEST FOOD ================= */
+            try {
+                const id = button.dataset.id;
+                const action = button.dataset.action;
 
-function requestFood(button) {
-
-    button.innerText = "REQUEST SENT ✓";
-
-    button.disabled = true;
-
-    button.style.background = "#718078";
-
-    alert(
-        "Food request sent to the donor successfully!"
-    );
+                if (action === "request") {
+                    await apiRequest(`/donations/${id}/request`, {
+                        method: "POST",
+                        body: JSON.stringify({ ngo_name: NGO_NAME })
+                    });
+                    await showNGODashboard();
+                } else if (action === "confirm") {
+                    await apiRequest(`/donations/${id}/confirm`, {
+                        method: "POST"
+                    });
+                    await showDonorDashboard();
+                } else if (action === "collect") {
+                    await apiRequest(`/donations/${id}/collect`, {
+                        method: "POST"
+                    });
+                    await showDonorDashboard();
+                }
+            } catch (error) {
+                alert(error.message);
+                button.disabled = false;
+            }
+        });
+    });
 }
 
+async function showDonorDashboard() {
+    const donations = await apiRequest(
+        `/donations?donor_name=${encodeURIComponent(DONOR_NAME)}`
+    );
 
-/* ================= ADMIN ================= */
+    const available = donations.filter(item => item.status === "Available").length;
+    const requested = donations.filter(item => item.status === "Requested").length;
+    const collected = donations.filter(item => item.status === "Collected").length;
 
-function showAdminDashboard(content) {
-
-    content.innerHTML = `
-
-        <div class="dashboard-header">
-
-            <h2>Admin Dashboard 🛡️</h2>
-
-            <p>
-                Monitor and manage the FoodShare platform
-            </p>
-
-        </div>
-
+    dashboardContent.innerHTML = `
+        ${dashboardHeader("Donor Dashboard 🏢", `Welcome, ${DONOR_NAME}`)}
 
         <div class="dashboard-stats">
-
-            <div class="dashboard-stat">
-                <strong>18</strong>
-                <span>Donors</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>24</strong>
-                <span>NGOs</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>86</strong>
-                <span>Completed</span>
-            </div>
-
-            <div class="dashboard-stat">
-                <strong>7</strong>
-                <span>Expired</span>
-            </div>
-
+            <div class="dashboard-stat"><strong>${available}</strong><span>Available</span></div>
+            <div class="dashboard-stat"><strong>${requested}</strong><span>Requested</span></div>
+            <div class="dashboard-stat"><strong>${collected}</strong><span>Collected</span></div>
+            <div class="dashboard-stat"><strong>${donations.length}</strong><span>Total listings</span></div>
         </div>
 
+        <section class="dashboard-card">
+            <h3>➕ Add New Donation</h3>
+            <form id="donationForm">
+                <input name="food_name" placeholder="Food name, e.g. Rice and dal" required>
+                <input name="quantity" type="number" min="1" placeholder="Quantity in portions" required>
+                <input name="location" placeholder="Pickup location" required>
+                <input name="pickup_deadline" placeholder="Pickup deadline, e.g. 10:30 PM" required>
+                <button class="action-btn" type="submit">POST DONATION</button>
+            </form>
+        </section>
 
-        <div class="dashboard-card">
+        <section class="dashboard-card">
+            <h3>📦 My Donations</h3>
+            ${donations.length
+                ? donations.map(item => donationCard(
+                    item,
+                    item.status === "Requested"
+                        ? "confirm"
+                        : item.status === "Confirmed"
+                            ? "collect"
+                            : ""
+                )).join("")
+                : "<p>No donations yet. Add a listing above.</p>"}
+        </section>
+    `;
 
-            <h3>📊 Platform Overview</h3>
+    document.getElementById("donationForm").addEventListener("submit", async event => {
+        event.preventDefault();
 
-            <div class="food-card">
+        const formData = Object.fromEntries(new FormData(event.currentTarget));
 
-                <div class="food-card-header">
+        try {
+            await apiRequest("/donations", {
+                method: "POST",
+                body: JSON.stringify({
+                    ...formData,
+                    category: "Prepared meals",
+                    donor_name: DONOR_NAME
+                })
+            });
+            await showDonorDashboard();
+        } catch (error) {
+            alert(error.message);
+        }
+    });
 
-                    <h4>Food Rescued</h4>
+    connectActionButtons();
+}
 
-                    <strong>1,250 kg</strong>
+async function showNGODashboard() {
+    const [available, allDonations] = await Promise.all([
+        apiRequest("/donations?status=Available"),
+        apiRequest("/donations")
+    ]);
 
-                </div>
+    const requested = allDonations.filter(item => item.status === "Requested").length;
+    const collected = allDonations.filter(item => item.status === "Collected").length;
 
-                <div class="food-details">
+    dashboardContent.innerHTML = `
+        ${dashboardHeader("NGO Dashboard 🤝", `Finding food as ${NGO_NAME}`)}
 
-                    <span>🍽️ 3,420 meals saved</span>
-
-                    <span>🤝 24 NGOs</span>
-
-                </div>
-
-            </div>
-
-
-            <div class="food-card">
-
-                <div class="food-card-header">
-
-                    <h4>Pending Verification</h4>
-
-                    <span class="status">
-                        3 USERS
-                    </span>
-
-                </div>
-
-                <div class="food-details">
-
-                    <span>2 NGOs</span>
-
-                    <span>1 Donor</span>
-
-                </div>
-
-                <button
-                    class="action-btn"
-                    onclick="alert('Verification panel will be connected to the backend later.')"
-                >
-                    REVIEW
-                </button>
-
-            </div>
-
+        <div class="dashboard-stats">
+            <div class="dashboard-stat"><strong>${available.length}</strong><span>Available</span></div>
+            <div class="dashboard-stat"><strong>${requested}</strong><span>Requested</span></div>
+            <div class="dashboard-stat"><strong>${collected}</strong><span>Collected</span></div>
+            <div class="dashboard-stat"><strong>${allDonations.length}</strong><span>Total listings</span></div>
         </div>
 
+        <section class="dashboard-card">
+            <h3>🍱 Available Donations</h3>
+            ${available.length
+                ? available.map(item => donationCard(item, "request")).join("")
+                : "<p>No available donations right now. Check back later.</p>"}
+        </section>
+    `;
 
-        <div class="dashboard-card">
+    connectActionButtons();
+}
 
-            <h3>🤖 Smart Matching Preview</h3>
+async function showAdminDashboard() {
+    const [stats, donations] = await Promise.all([
+        apiRequest("/admin/stats"),
+        apiRequest("/donations")
+    ]);
 
-            <div class="food-card">
+    dashboardContent.innerHTML = `
+        ${dashboardHeader("Admin Dashboard 🛡️", "Live FoodShare database overview")}
 
-                <div class="food-card-header">
-
-                    <h4>Best NGO Match</h4>
-
-                    <span class="status">
-                        94% MATCH
-                    </span>
-
-                </div>
-
-                <div class="food-details">
-
-                    <span>📍 2.4 km away</span>
-
-                    <span>🍚 Accepts cooked food</span>
-
-                    <span>🚚 Pickup available</span>
-
-                </div>
-
-            </div>
-
+        <div class="dashboard-stats">
+            <div class="dashboard-stat"><strong>${stats.total_donations}</strong><span>Total donations</span></div>
+            <div class="dashboard-stat"><strong>${stats.available}</strong><span>Available</span></div>
+            <div class="dashboard-stat"><strong>${stats.requested}</strong><span>Requested</span></div>
+            <div class="dashboard-stat"><strong>${stats.collected}</strong><span>Collected</span></div>
         </div>
 
+        <section class="dashboard-card">
+            <h3>📊 Donation listings</h3>
+            <p>${stats.portions_collected} portions collected so far.</p>
+            ${donations.length
+                ? donations.map(item => donationCard(item)).join("")
+                : "<p>No donations have been posted yet.</p>"}
+        </section>
     `;
 }
-
-
-/* ================= SCROLL ================= */
-
-function scrollToSection(sectionId) {
-
-    document
-        .getElementById(sectionId)
-        .scrollIntoView({
-            behavior: "smooth"
-        });
-}
-
-
-/* ================= CLOSE MODAL ================= */
-
-window.addEventListener("click", function(event) {
-
-    const loginModal =
-        document.getElementById("loginModal");
-
-    const dashboard =
-        document.getElementById("dashboard");
-
-
-    if (event.target === loginModal) {
-        closeLogin();
-    }
-
-    if (event.target === dashboard) {
-        closeDashboard();
-    }
-
-});
