@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import math
 from pathlib import Path
 import sqlite3
 
@@ -28,12 +29,42 @@ def initialize_database():
                 quantity INTEGER NOT NULL,
                 donor_name TEXT NOT NULL,
                 location TEXT NOT NULL,
+                latitude REAL,
+                longitude REAL,
                 pickup_deadline TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'Available',
                 requested_by TEXT,
                 created_at TEXT NOT NULL
             )
         """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS organizations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                location TEXT NOT NULL,
+                contact_email TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Pending',
+                created_at TEXT NOT NULL
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS complaints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                reporter_name TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                details TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'Open',
+                created_at TEXT NOT NULL
+            )
+        """)
+        donation_columns = {
+            row["name"]
+            for row in db.execute("PRAGMA table_info(donations)").fetchall()
+        }
+        if "latitude" not in donation_columns:
+            db.execute("ALTER TABLE donations ADD COLUMN latitude REAL")
+        if "longitude" not in donation_columns:
+            db.execute("ALTER TABLE donations ADD COLUMN longitude REAL")
         db.commit()
 
 
@@ -96,12 +127,14 @@ def list_donations():
     donor_name = request.args.get("donor_name", "").strip()
     search = request.args.get("search", "").strip()
 
-    query = "SELECT * FROM donations WHERE status != 'Expired'"
+    query = "SELECT * FROM donations WHERE 1 = 1"
     values = []
 
     if status:
         query += " AND status = ?"
         values.append(status)
+    else:
+        query += " AND status != 'Expired'"
 
     if donor_name:
         query += " AND donor_name = ?"
@@ -167,6 +200,26 @@ def create_donation():
     donor_name = str(data["donor_name"]).strip()
     location = str(data["location"]).strip()
     pickup_deadline = str(data["pickup_deadline"]).strip()
+    latitude_value = data.get("latitude")
+    longitude_value = data.get("longitude")
+    try:
+        latitude = None if latitude_value in (None, "") else float(latitude_value)
+        longitude = None if longitude_value in (None, "") else float(longitude_value)
+        if (latitude is None) != (longitude is None):
+            raise ValueError
+        if latitude is not None and (
+            not math.isfinite(latitude) or not (-90 <= latitude <= 90)
+        ):
+            raise ValueError
+        if longitude is not None and (
+            not math.isfinite(longitude) or not (-180 <= longitude <= 180)
+        ):
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Pickup coordinates must include a valid latitude and longitude."
+        }), 400
+
     created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     with connect_db() as db:
@@ -177,17 +230,21 @@ def create_donation():
                 quantity,
                 donor_name,
                 location,
+                latitude,
+                longitude,
                 pickup_deadline,
                 status,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, 'Available', ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Available', ?)
         """, (
             food_name,
             category or "Prepared meals",
             quantity,
             donor_name,
             location,
+            latitude,
+            longitude,
             pickup_deadline,
             created_at
         ))
@@ -243,6 +300,122 @@ def collect_donation(donation_id):
     return jsonify(as_json(get_donation(donation_id)))
 
 
+@app.get("/api/organizations")
+def list_organizations():
+    with connect_db() as db:
+        rows = db.execute(
+            "SELECT * FROM organizations ORDER BY created_at DESC, id DESC"
+        ).fetchall()
+
+    return jsonify([as_json(row) for row in rows])
+
+
+@app.post("/api/organizations")
+def create_organization():
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "")).strip()
+    location = str(data.get("location", "")).strip()
+    contact_email = str(data.get("contact_email", "")).strip()
+
+    if not name or not location or not contact_email:
+        return jsonify({
+            "error": "Organization name, location and contact email are required."
+        }), 400
+
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with connect_db() as db:
+        cursor = db.execute("""
+            INSERT INTO organizations (name, location, contact_email, status, created_at)
+            VALUES (?, ?, ?, 'Pending', ?)
+        """, (name, location, contact_email, created_at))
+        organization = db.execute(
+            "SELECT * FROM organizations WHERE id = ?",
+            (cursor.lastrowid,)
+        ).fetchone()
+
+    return jsonify(as_json(organization)), 201
+
+
+@app.patch("/api/organizations/<int:organization_id>/status")
+def update_organization_status(organization_id):
+    data = request.get_json(silent=True) or {}
+    status = str(data.get("status", "")).strip()
+    if status not in {"Verified", "Rejected"}:
+        return jsonify({"error": "Status must be Verified or Rejected."}), 400
+
+    with connect_db() as db:
+        result = db.execute(
+            "UPDATE organizations SET status = ? WHERE id = ?",
+            (status, organization_id)
+        )
+        if result.rowcount == 0:
+            return jsonify({"error": "Organization not found."}), 404
+        organization = db.execute(
+            "SELECT * FROM organizations WHERE id = ?",
+            (organization_id,)
+        ).fetchone()
+
+    return jsonify(as_json(organization))
+
+
+@app.get("/api/complaints")
+def list_complaints():
+    with connect_db() as db:
+        rows = db.execute(
+            "SELECT * FROM complaints ORDER BY created_at DESC, id DESC"
+        ).fetchall()
+
+    return jsonify([as_json(row) for row in rows])
+
+
+@app.post("/api/complaints")
+def create_complaint():
+    data = request.get_json(silent=True) or {}
+    reporter_name = str(data.get("reporter_name", "")).strip()
+    subject = str(data.get("subject", "")).strip()
+    details = str(data.get("details", "")).strip()
+
+    if not reporter_name or not subject or not details:
+        return jsonify({
+            "error": "Reporter name, subject and complaint details are required."
+        }), 400
+
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with connect_db() as db:
+        cursor = db.execute("""
+            INSERT INTO complaints (reporter_name, subject, details, status, created_at)
+            VALUES (?, ?, ?, 'Open', ?)
+        """, (reporter_name, subject, details, created_at))
+        complaint = db.execute(
+            "SELECT * FROM complaints WHERE id = ?",
+            (cursor.lastrowid,)
+        ).fetchone()
+
+    return jsonify(as_json(complaint)), 201
+
+
+@app.patch("/api/complaints/<int:complaint_id>/status")
+def update_complaint_status(complaint_id):
+    data = request.get_json(silent=True) or {}
+    status = str(data.get("status", "")).strip()
+    if status != "Resolved":
+        return jsonify({"error": "Status must be Resolved."}), 400
+
+    with connect_db() as db:
+        result = db.execute(
+            "UPDATE complaints SET status = ? WHERE id = ?",
+            (status, complaint_id)
+        )
+        if result.rowcount == 0:
+            return jsonify({"error": "Complaint not found."}), 404
+        complaint = db.execute(
+            "SELECT * FROM complaints WHERE id = ?",
+            (complaint_id,)
+        ).fetchone()
+
+    return jsonify(as_json(complaint))
+
+
 @app.get("/api/admin/stats")
 def admin_stats():
     with connect_db() as db:
@@ -257,8 +430,22 @@ def admin_stats():
             FROM donations
             WHERE status = 'Collected'
         """).fetchone()[0]
+        organization_counts = db.execute("""
+            SELECT status, COUNT(*) AS count
+            FROM organizations
+            GROUP BY status
+        """).fetchall()
+        open_complaints = db.execute("""
+            SELECT COUNT(*)
+            FROM complaints
+            WHERE status = 'Open'
+        """).fetchone()[0]
 
     counts = {row["status"]: row["count"] for row in rows}
+    organizations = {
+        row["status"]: row["count"]
+        for row in organization_counts
+    }
 
     return jsonify({
         "total_donations": sum(counts.values()),
@@ -267,7 +454,10 @@ def admin_stats():
         "confirmed": counts.get("Confirmed", 0),
         "collected": counts.get("Collected", 0),
         "expired": counts.get("Expired", 0),
-        "portions_collected": portions_collected
+        "portions_collected": portions_collected,
+        "pending_organizations": organizations.get("Pending", 0),
+        "verified_organizations": organizations.get("Verified", 0),
+        "open_complaints": open_complaints
     })
 
 
